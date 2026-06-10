@@ -84,6 +84,14 @@ const (
 	LarkErrMailSendQuotaTenantExt = 1236009 // tenant daily external recipient count exceeded
 	LarkErrMailQuota              = 1236010 // mail quota limit
 	LarkErrTenantStorageLimit     = 1236013 // tenant storage limit exceeded
+
+	// Docs/slides commercial plan quota codes from the cloud-space explorer
+	// service, passed through verbatim by document backends as HTTP 200 with
+	// body code≠0 (observed on slides_ai create and drive/v1/import_tasks).
+	// Not retryable: these are billing-plan limits.
+	LarkErrDocsCreatePremiumQuota = 90003086 // premium plan document creation count limit reached
+	LarkErrDocsCreateA2Quota      = 90003087 // A2 plan document creation count limit reached
+	LarkErrDocsModuleUnbundled    = 90003088 // tenant has not purchased / enabled the docs module
 )
 
 // legacyHints supplies the per-code actionable hint string for the legacy
@@ -118,6 +126,10 @@ var legacyHints = map[int]string{
 		"width/height must be >= 20 px; offsets must be >= 0 and less than the anchor cell's width/height",
 	LarkErrDrivePermApplyRateLimit:     "permission-apply quota reached: each user may request access on the same document at most 5 times per day; wait or ask the owner directly",
 	LarkErrDrivePermApplyNotApplicable: "this document does not accept a permission-apply request (common causes: the document is configured to disallow access requests, the caller already holds the permission, or the target type does not support apply); contact the owner directly",
+
+	LarkErrDocsCreatePremiumQuota: "document creation quota of the current plan reached: upgrade the plan or delete documents you no longer need to free quota; retrying will not help",
+	LarkErrDocsCreateA2Quota:      "document creation quota of the current plan reached: upgrade the plan or delete documents you no longer need to free quota; retrying will not help",
+	LarkErrDocsModuleUnbundled:    "the tenant has not purchased or enabled the docs module; ask the tenant admin to enable it before creating documents",
 }
 
 // ClassifyLarkError maps a Lark API error code + message to the legacy

@@ -10,8 +10,16 @@ import (
 )
 
 // CodeMeta is the classification metadata attached to a Lark numeric code.
-// It does NOT carry Message or Hint — those are derived at the dispatcher
+// It does NOT carry Message — that is derived at the dispatcher
 // (see BuildAPIError).
+//
+// Hint is the optional per-code context-free recovery hint for codes whose
+// recovery action is more specific than their subtype's APIHint default
+// (e.g. a plan-quota code whose quota never resets, so the generic
+// "retry after the quota resets" wording would mislead). The CategoryAPI
+// dispatcher arm prefers a server-supplied detail, then this per-code hint,
+// then APIHint(subtype). Leave empty when the subtype default (or no hint)
+// is accurate.
 //
 // Risk + Action are populated only for codes that route to CategoryConfirmation;
 // the dispatcher falls back to RiskUnknown + ctx.LarkCmd when either is empty
@@ -20,6 +28,7 @@ type CodeMeta struct {
 	Category  errs.Category
 	Subtype   errs.Subtype
 	Retryable bool
+	Hint      string // CategoryAPI arm only; empty → fall back to APIHint(subtype)
 	Risk      string // CategoryConfirmation arm only; empty otherwise
 	Action    string // CategoryConfirmation arm only; empty otherwise
 }

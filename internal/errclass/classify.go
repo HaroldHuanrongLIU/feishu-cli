@@ -142,7 +142,13 @@ func BuildAPIError(resp map[string]any, cc ClassifyContext) error {
 		}
 	case errs.CategoryAPI:
 		// A server-supplied detail (lifted into base.Hint above) wins over the
-		// context-free APIHint default; only fall back to APIHint when absent.
+		// context-free defaults; below that, a per-code CodeMeta.Hint (for codes
+		// whose recovery is more specific than their subtype's wording) wins
+		// over the per-subtype APIHint; only fall back to APIHint when both
+		// are absent.
+		if base.Hint == "" {
+			base.Hint = meta.Hint
+		}
 		if base.Hint == "" {
 			base.Hint = APIHint(base.Subtype) // "" for subtypes without a context-free default
 		}

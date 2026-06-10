@@ -27,6 +27,14 @@ func TestLookupCodeMeta_DriveCodes(t *testing.T) {
 		// 1069302: comment endpoint's opaque "Invalid or missing parameters"
 		// (shortcuts/drive/drive_add_comment.go) → API-side parameter rejection.
 		{1069302, errs.CategoryAPI, errs.SubtypeInvalidParameters, false},
+		// 9000308x: cloud-space explorer commercial plan codes, passed
+		// through by document backends (slides_ai create, drive import_tasks)
+		// as HTTP 200 with body code≠0. Billing limits → never retryable.
+		// 86/87 are plan creation-count quotas; 88 is "docs module not
+		// purchased/enabled" — a precondition, not a quota.
+		{90003086, errs.CategoryAPI, errs.SubtypeQuotaExceeded, false},
+		{90003087, errs.CategoryAPI, errs.SubtypeQuotaExceeded, false},
+		{90003088, errs.CategoryAPI, errs.SubtypeFailedPrecondition, false},
 	}
 	for _, tc := range cases {
 		t.Run(fmt.Sprintf("%d", tc.code), func(t *testing.T) {

@@ -173,6 +173,54 @@ func TestBuildAPIError_TaskInvalidParamsRoutesToAPIError(t *testing.T) {
 	}
 }
 
+// TestBuildAPIError_PerCodeHint pins that the CategoryAPI arm surfaces the
+// per-code CodeMeta.Hint on the typed envelope — the commercial-plan codes
+// are produced by typed call sites (slides +create, drive import), so without
+// this the plan-quota codes would inherit the misleading per-subtype default
+// ("retry after the relevant quota resets") and 90003088 would carry no hint
+// at all. Also pins precedence: a server-supplied detail still wins.
+func TestBuildAPIError_PerCodeHint(t *testing.T) {
+	t.Run("quota code gets per-code hint over subtype default", func(t *testing.T) {
+		resp := map[string]any{"code": 90003087, "msg": "A2 create quota exceeded"}
+		err := errclass.BuildAPIError(resp, errclass.ClassifyContext{})
+		p, ok := errs.ProblemOf(err)
+		if !ok {
+			t.Fatal("ProblemOf returned !ok")
+		}
+		if !strings.Contains(p.Hint, "retrying will not help") {
+			t.Errorf("Hint = %q, want the per-code plan-quota hint, not the generic quota-resets default", p.Hint)
+		}
+	})
+	t.Run("failed-precondition code gets per-code hint despite empty subtype default", func(t *testing.T) {
+		resp := map[string]any{"code": 90003088, "msg": "docs module unbundled"}
+		err := errclass.BuildAPIError(resp, errclass.ClassifyContext{})
+		p, ok := errs.ProblemOf(err)
+		if !ok {
+			t.Fatal("ProblemOf returned !ok")
+		}
+		if !strings.Contains(p.Hint, "docs module") {
+			t.Errorf("Hint = %q, want the per-code docs-module hint", p.Hint)
+		}
+	})
+	t.Run("server detail still wins over per-code hint", func(t *testing.T) {
+		resp := map[string]any{
+			"code": 90003087,
+			"msg":  "A2 create quota exceeded",
+			"error": map[string]any{
+				"details": []any{map[string]any{"value": "server-side specifics"}},
+			},
+		}
+		err := errclass.BuildAPIError(resp, errclass.ClassifyContext{})
+		p, ok := errs.ProblemOf(err)
+		if !ok {
+			t.Fatal("ProblemOf returned !ok")
+		}
+		if !strings.Contains(p.Hint, "server-side specifics") {
+			t.Errorf("Hint = %q, want lifted server detail to take precedence", p.Hint)
+		}
+	})
+}
+
 // TestBuildAPIError_TroubleshooterLiftedOnAPIArm pins that BuildAPIError lifts
 // resp.error.troubleshooter into Problem.Troubleshooter when the response
 // routes to the catch-all CategoryAPI arm. troubleshooter is the only
