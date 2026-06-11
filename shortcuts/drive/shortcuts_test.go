@@ -31,6 +31,7 @@ func TestShortcutsIncludesExpectedCommands(t *testing.T) {
 		"+sync",
 		"+task_result",
 		"+apply-permission",
+		"+member-add",
 		"+secure-label-list",
 		"+secure-label-update",
 		"+search",
