@@ -29,9 +29,14 @@ var AppsMessageGet = common.Shortcut{
 	AuthTypes: []string{"user"},
 	HasFormat: true,
 	Flags: []common.Flag{
-		{Name: "app-id", Desc: "app ID", Required: true},
-		{Name: "session-id", Desc: "session ID", Required: true},
-		{Name: "turn-id", Desc: "turn ID (from +session-get latest_turn.turn_id)", Required: true},
+		// app-id / session-id / turn-id are intentionally NOT Required:true. The
+		// framework maps Required:true to cobra's MarkFlagRequired, whose error is
+		// plain-text exit-1, bypassing the structured envelope. Spec §6 mandates
+		// exit-2 + a {"ok":false,"error":{...}} validation envelope, so the
+		// emptiness checks live in Validate (output.ErrValidation -> exit 2).
+		{Name: "app-id", Desc: "app ID"},
+		{Name: "session-id", Desc: "session ID"},
+		{Name: "turn-id", Desc: "turn ID (from +session-get latest_turn.turn_id)"},
 		{Name: "cursor", Type: "int", Desc: "pagination cursor from previous response next_cursor (omit for first page)"},
 	},
 	Validate: func(ctx context.Context, rctx *common.RuntimeContext) error {
