@@ -34,6 +34,11 @@ func FetchSubscribedCallbacks(ctx context.Context, client APIClient, appID strin
 	if err := json.Unmarshal(raw, &envelope); err != nil {
 		return nil, fmt.Errorf("decode application response: %w", err)
 	}
+	// callback_info also carries callback_type (e.g. "websocket"); it is
+	// intentionally not parsed or validated. Feishu open-platform callbacks are
+	// delivered over WebSocket only (confirmed), matching the CLI's WebSocket
+	// event source, so subscribed_callbacks alone is sufficient for the precheck.
+	// Revisit and validate callback_type if non-WebSocket delivery ever appears.
 	callbacks := []string{}
 	if ci := envelope.Data.App.CallbackInfo; ci != nil {
 		callbacks = append(callbacks, ci.SubscribedCallbacks...)

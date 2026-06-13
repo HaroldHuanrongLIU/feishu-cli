@@ -167,7 +167,13 @@ func (h *Hub) TryRegisterExclusive(s Subscriber) (bool, string) {
 			timer := time.NewTimer(remaining)
 			select {
 			case <-ch:
-				timer.Stop()
+				// Stop+drain so a timer that fired concurrently with Stop isn't left on .C.
+				if !timer.Stop() {
+					select {
+					case <-timer.C:
+					default:
+					}
+				}
 				continue
 			case <-timer.C:
 				return false, "timed out waiting for the previous consumer's cleanup to finish; retry shortly"
