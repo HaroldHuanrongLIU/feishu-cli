@@ -91,8 +91,10 @@ func addonsHintURL(brand core.LarkBrand, appID string, a ManifestAddons) string 
 }
 
 // missingScopeAddons routes missing scopes into the identity-appropriate section.
+// The unused side is an empty (non-nil) slice so JSON encodes [] not null —
+// the addons spec treats a missing tenant/user as an empty array.
 func missingScopeAddons(identity core.Identity, missing []string) ManifestAddons {
-	s := &AddonsScopes{}
+	s := &AddonsScopes{Tenant: []string{}, User: []string{}}
 	if identity.IsBot() {
 		s.Tenant = missing
 	} else {
@@ -102,11 +104,12 @@ func missingScopeAddons(identity core.Identity, missing []string) ManifestAddons
 }
 
 // missingSubscriptionAddons routes missing events/callbacks into the right section.
+// Like missingScopeAddons, unused event sides stay [] (not null) per the addons spec.
 func missingSubscriptionAddons(subType eventlib.SubscriptionType, identity core.Identity, missing []string) ManifestAddons {
 	if subType == eventlib.SubTypeCallback {
 		return ManifestAddons{Callbacks: &AddonsCallbacks{Items: missing}}
 	}
-	ev := &AddonsEvents{}
+	ev := &AddonsEvents{Items: AddonsEventItems{Tenant: []string{}, User: []string{}}}
 	if identity.IsBot() {
 		ev.Items.Tenant = missing
 	} else {

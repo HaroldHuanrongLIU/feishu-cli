@@ -91,3 +91,22 @@ func TestMissingSubscriptionAddons_EventVsCallback(t *testing.T) {
 		t.Errorf("callback addons = %+v, want callbacks.items only", cb)
 	}
 }
+
+func TestMissingAddons_EncodeEmptyArraysNotNull(t *testing.T) {
+	// Unused identity sides must encode as [] (not null) so the launcher page's
+	// shape validation treats them as "缺省 -> 空数组" per the addons spec.
+	cases := []ManifestAddons{
+		missingScopeAddons(core.AsBot, []string{"im:message"}),
+		missingScopeAddons(core.AsUser, []string{"im:message"}),
+		missingSubscriptionAddons(eventlib.SubTypeEvent, core.AsBot, []string{"im.message.receive_v1"}),
+	}
+	for i, a := range cases {
+		raw, err := json.Marshal(a)
+		if err != nil {
+			t.Fatalf("case %d marshal: %v", i, err)
+		}
+		if bytes.Contains(raw, []byte("null")) {
+			t.Errorf("case %d encodes a null array, want []: %s", i, raw)
+		}
+	}
+}
