@@ -9,24 +9,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/larksuite/cli/internal/core"
 	eventlib "github.com/larksuite/cli/internal/event"
 )
-
-// consoleScopeGrantURL builds the developer-console "apply & grant scopes" deep link; scopes are comma-joined without URL encoding.
-func consoleScopeGrantURL(brand core.LarkBrand, appID string, scopes []string) string {
-	host := core.ResolveEndpoints(brand).Open
-	return fmt.Sprintf("%s/app/%s/auth?q=%s&op_from=openapi&token_type=tenant",
-		host, appID, strings.Join(scopes, ","))
-}
-
-// consoleEventSubscriptionURL points at the app's event subscription console page.
-func consoleEventSubscriptionURL(brand core.LarkBrand, appID string) string {
-	host := core.ResolveEndpoints(brand).Open
-	return fmt.Sprintf("%s/app/%s/event", host, appID)
-}
 
 // Landing-page contract for the scan-to-enable deep link. Centralized so the
 // path/param can be corrected in one place once confirmed with the open platform.
