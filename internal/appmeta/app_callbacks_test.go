@@ -6,8 +6,11 @@ package appmeta
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 )
+
+var errFakeFetch = errors.New("fake fetch error")
 
 type fakeCallbackClient struct {
 	raw string
@@ -39,12 +42,29 @@ func TestFetchSubscribedCallbacks_ParsesList(t *testing.T) {
 }
 
 func TestFetchSubscribedCallbacks_NoCallbackInfo(t *testing.T) {
+	// A successful fetch with no callback_info means "zero callbacks subscribed",
+	// which must be a non-nil empty slice (distinct from a fetch error's nil) so
+	// the precheck reports a required callback as missing instead of skipping.
 	raw := `{"code":0,"data":{"app":{"app_id":"cli_x"}},"msg":"success"}`
 	got, err := FetchSubscribedCallbacks(context.Background(), fakeCallbackClient{raw: raw}, "cli_x")
 	if err != nil {
 		t.Fatalf("unexpected err: %v", err)
 	}
+	if got == nil {
+		t.Fatalf("got nil, want non-nil empty slice")
+	}
+	if len(got) != 0 {
+		t.Errorf("got %v, want empty", got)
+	}
+}
+
+func TestFetchSubscribedCallbacks_FetchError(t *testing.T) {
+	// A fetch error must return nil so the caller treats it as a weak-dependency skip.
+	got, err := FetchSubscribedCallbacks(context.Background(), fakeCallbackClient{err: errFakeFetch}, "cli_x")
+	if err == nil {
+		t.Fatal("expected error")
+	}
 	if got != nil {
-		t.Errorf("got %v, want nil", got)
+		t.Errorf("got %v, want nil on fetch error", got)
 	}
 }

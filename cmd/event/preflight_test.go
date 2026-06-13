@@ -209,7 +209,7 @@ func TestPreflightEventTypes_CallbackSkippedWhenNil(t *testing.T) {
 		brand:               core.BrandFeishu,
 		eventKey:            "test.cb",
 		identity:            core.AsBot,
-		subscribedCallbacks: nil, // 底账拿不到 -> 跳过
+		subscribedCallbacks: nil, // fetch 失败/拿不到 -> 弱依赖跳过
 		keyDef: &eventlib.KeyDefinition{
 			Key:                   "test.cb",
 			SubscriptionType:      eventlib.SubTypeCallback,
@@ -218,6 +218,31 @@ func TestPreflightEventTypes_CallbackSkippedWhenNil(t *testing.T) {
 	}
 	if err := preflightEventTypes(pf); err != nil {
 		t.Errorf("expected skip (nil), got %v", err)
+	}
+}
+
+func TestPreflightEventTypes_CallbackEmptyReportsMissing(t *testing.T) {
+	// fetched but zero callbacks subscribed (non-nil empty) is a definitive
+	// console state: a required callback IS missing and must be reported,
+	// not skipped as a weak dependency.
+	pf := &preflightCtx{
+		appID:               "cli_x",
+		brand:               core.BrandFeishu,
+		eventKey:            "test.cb",
+		identity:            core.AsBot,
+		subscribedCallbacks: []string{}, // fetched, none subscribed
+		keyDef: &eventlib.KeyDefinition{
+			Key:                   "test.cb",
+			SubscriptionType:      eventlib.SubTypeCallback,
+			RequiredConsoleEvents: []string{"card.action.trigger"},
+		},
+	}
+	err := preflightEventTypes(pf)
+	if err == nil {
+		t.Fatal("expected error for missing callback when none are subscribed")
+	}
+	if !strings.Contains(err.Error(), "card.action.trigger") {
+		t.Errorf("error should name the missing callback, got: %q", err.Error())
 	}
 }
 

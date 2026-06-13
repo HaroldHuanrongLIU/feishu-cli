@@ -10,8 +10,11 @@ import (
 )
 
 // FetchSubscribedCallbacks returns the app's currently subscribed callback names
-// from application/get. Returns (nil, nil) when callback_info is absent.
-// Identity must be bot: the endpoint is app-level.
+// from application/get. On a successful fetch it always returns a non-nil slice
+// (empty when callback_info is absent or lists no callbacks) so callers can
+// distinguish "fetched, zero callbacks subscribed" — a definitive console state
+// that must fail the precheck — from a fetch error (nil), which is a
+// weak-dependency skip. Identity must be bot: the endpoint is app-level.
 func FetchSubscribedCallbacks(ctx context.Context, client APIClient, appID string) ([]string, error) {
 	path := fmt.Sprintf("/open-apis/application/v6/applications/%s?lang=zh_cn", appID)
 	raw, err := client.CallAPI(ctx, "GET", path, nil)
@@ -31,8 +34,9 @@ func FetchSubscribedCallbacks(ctx context.Context, client APIClient, appID strin
 	if err := json.Unmarshal(raw, &envelope); err != nil {
 		return nil, fmt.Errorf("decode application response: %w", err)
 	}
-	if envelope.Data.App.CallbackInfo == nil {
-		return nil, nil
+	callbacks := []string{}
+	if ci := envelope.Data.App.CallbackInfo; ci != nil {
+		callbacks = append(callbacks, ci.SubscribedCallbacks...)
 	}
-	return envelope.Data.App.CallbackInfo.SubscribedCallbacks, nil
+	return callbacks, nil
 }
