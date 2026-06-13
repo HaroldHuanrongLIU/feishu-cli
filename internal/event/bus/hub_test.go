@@ -6,6 +6,7 @@ package bus
 import (
 	"encoding/json"
 	"net"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -367,15 +368,46 @@ func TestHub_TryRegisterExclusive(t *testing.T) {
 
 	second := newTestConn("k.exclusive", []string{"k.exclusive"})
 	second.pid = 200
-	ok, existingPID := h.TryRegisterExclusive(second)
+	ok, reason := h.TryRegisterExclusive(second)
 	if ok {
 		t.Error("second exclusive register should be rejected")
 	}
-	if existingPID != 100 {
-		t.Errorf("existingPID = %d, want 100", existingPID)
+	if !strings.Contains(reason, "pid 100") {
+		t.Errorf("reject reason = %q, want it to name existing pid 100", reason)
 	}
 	if got := h.SubCount("k.exclusive"); got != 1 {
 		t.Errorf("SubCount = %d, want 1 (second not registered)", got)
+	}
+}
+
+func TestHub_TryRegisterExclusive_CleanupWaitTimeout(t *testing.T) {
+	// A cleanup lock that never releases must not wedge a new exclusive consumer
+	// forever — TryRegisterExclusive bounds the wait and rejects with a timeout reason.
+	saved := exclusiveCleanupWaitTimeout
+	exclusiveCleanupWaitTimeout = 20 * time.Millisecond
+	defer func() { exclusiveCleanupWaitTimeout = saved }()
+
+	h := NewHub()
+	first := newTestConn("k.timeout", []string{"k.timeout"})
+	if ok, _ := h.TryRegisterExclusive(first); !ok {
+		t.Fatal("first exclusive register should succeed")
+	}
+	// Hold the cleanup lock and never release it.
+	if !h.AcquireCleanupLock("k.timeout") {
+		t.Fatal("AcquireCleanupLock should succeed for the sole subscriber")
+	}
+
+	start := time.Now()
+	second := newTestConn("k.timeout", []string{"k.timeout"})
+	ok, reason := h.TryRegisterExclusive(second)
+	if ok {
+		t.Error("second exclusive register should be rejected on cleanup-wait timeout")
+	}
+	if !strings.Contains(reason, "timed out") {
+		t.Errorf("reject reason = %q, want a timeout reason", reason)
+	}
+	if elapsed := time.Since(start); elapsed > time.Second {
+		t.Errorf("wait took %v, want bounded by the ~20ms timeout (no deadlock)", elapsed)
 	}
 }
 

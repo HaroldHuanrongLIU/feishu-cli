@@ -276,9 +276,8 @@ func (b *Bus) handleHello(conn net.Conn, reader *bufio.Reader, hello *protocol.H
 	}
 	var firstForKey bool
 	if exclusive {
-		ok, existingPID := b.hub.TryRegisterExclusive(bc)
+		ok, reason := b.hub.TryRegisterExclusive(bc)
 		if !ok {
-			reason := fmt.Sprintf("another consumer (pid %d) is already running for this subscription", existingPID)
 			if err := bc.writeFrame(protocol.NewHelloAckRejected("v1", reason)); err != nil {
 				b.logger.Printf("WARN: reject hello_ack write to pid=%d key=%q failed: %v", hello.PID, hello.EventKey, err)
 			}
