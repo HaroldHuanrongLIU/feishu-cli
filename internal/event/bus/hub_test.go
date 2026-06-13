@@ -355,3 +355,38 @@ func TestHub_Consumers_PopulatesSubscriptionID(t *testing.T) {
 		t.Errorf("Consumers()[0].SubscriptionID = %q, want %q", consumers[0].SubscriptionID, "mail.x:alice")
 	}
 }
+
+func TestHub_TryRegisterExclusive(t *testing.T) {
+	h := NewHub()
+	first := newTestConn("k.exclusive", []string{"k.exclusive"})
+	first.pid = 100
+	ok, _ := h.TryRegisterExclusive(first)
+	if !ok {
+		t.Fatal("first exclusive register should succeed")
+	}
+
+	second := newTestConn("k.exclusive", []string{"k.exclusive"})
+	second.pid = 200
+	ok, existingPID := h.TryRegisterExclusive(second)
+	if ok {
+		t.Error("second exclusive register should be rejected")
+	}
+	if existingPID != 100 {
+		t.Errorf("existingPID = %d, want 100", existingPID)
+	}
+	if got := h.SubCount("k.exclusive"); got != 1 {
+		t.Errorf("SubCount = %d, want 1 (second not registered)", got)
+	}
+}
+
+func TestHub_TryRegisterExclusive_DistinctSubscriptions(t *testing.T) {
+	h := NewHub()
+	a := newTestConn("k.a", []string{"k.a"})
+	b := newTestConn("k.b", []string{"k.b"})
+	if ok, _ := h.TryRegisterExclusive(a); !ok {
+		t.Fatal("register a failed")
+	}
+	if ok, _ := h.TryRegisterExclusive(b); !ok {
+		t.Error("distinct subscription b should register")
+	}
+}

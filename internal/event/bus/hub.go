@@ -124,6 +124,42 @@ func (h *Hub) RegisterAndIsFirst(s Subscriber) bool {
 	}
 }
 
+// TryRegisterExclusive registers s only when no subscriber holds s.SubscriptionID().
+// Returns (false, existingPID) when one already exists — the caller must reject.
+// Mirrors RegisterAndIsFirst's wait on in-progress cleanup for the same SubscriptionID.
+func (h *Hub) TryRegisterExclusive(s Subscriber) (bool, int) {
+	sid := s.SubscriptionID()
+	for {
+		h.mu.Lock()
+		ch, locked := h.cleanupInProgress[sid]
+		if locked {
+			h.mu.Unlock()
+			<-ch
+			continue
+		}
+		if h.subCounts[sid] != 0 {
+			pid := h.existingPIDForSubscriptionLocked(sid)
+			h.mu.Unlock()
+			return false, pid
+		}
+		h.subscribers[s] = struct{}{}
+		h.subCounts[sid]++
+		h.mu.Unlock()
+		return true, 0
+	}
+}
+
+// existingPIDForSubscriptionLocked returns the PID of one subscriber for sid.
+// Caller must hold h.mu.
+func (h *Hub) existingPIDForSubscriptionLocked(sid string) int {
+	for sub := range h.subscribers {
+		if sub.SubscriptionID() == sid {
+			return sub.PID()
+		}
+	}
+	return 0
+}
+
 // Publish fans out a RawEvent to all matching subscribers (non-blocking).
 //
 // A fresh *protocol.Event is allocated per subscriber so each consumer sees
