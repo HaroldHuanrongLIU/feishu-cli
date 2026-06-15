@@ -14,12 +14,13 @@ import (
 	eventlib "github.com/larksuite/cli/internal/event"
 )
 
-// Landing-page contract for the scan-to-enable deep link. Centralized so the
-// path/param can be corrected in one place once confirmed with the open platform.
-// NOTE: inferred from the addons spec doc (BVsOdgbRNosaeJxZzDTcVwP6njb); verify before release.
+// Landing-page contract for the scan-to-enable deep link, verified against the
+// open platform: {open-host}/page/launcher?clientID=<appID>&addons=<encoded>.
+// Note the param is camelCase "clientID" (not snake_case), and the value is the
+// consuming app's own ID. Centralized so it can be corrected in one place.
 const (
 	addonsLandingPath   = "/page/launcher"
-	addonsClientIDParam = "client_id"
+	addonsClientIDParam = "clientID"
 )
 
 // ManifestAddons mirrors the 5 public manifest sections the launcher page accepts.

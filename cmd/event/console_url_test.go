@@ -60,7 +60,7 @@ func TestConsoleAddonsURL_FormatAndBrandHost(t *testing.T) {
 		t.Fatalf("url: %v", err)
 	}
 	host := core.ResolveEndpoints(core.BrandFeishu).Open
-	prefix := host + "/page/launcher?client_id=cli_x&addons="
+	prefix := host + "/page/launcher?clientID=cli_x&addons="
 	if !strings.HasPrefix(url, prefix) {
 		t.Errorf("url = %q, want prefix %q", url, prefix)
 	}
