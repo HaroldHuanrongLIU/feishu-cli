@@ -278,13 +278,27 @@ func preflightScopes(ctx context.Context, pf *preflightCtx) error {
 	if len(missing) == 0 {
 		return nil
 	}
-	url := addonsHintURL(pf.brand, pf.appID, missingScopeAddons(pf.identity, missing))
 	return errs.NewPermissionError(errs.SubtypeMissingScope,
 		"missing required scopes for EventKey %s (as %s): %s",
 		pf.eventKey, pf.identity, strings.Join(missing, ", ")).
 		WithIdentity(string(pf.identity)).
 		WithMissingScopes(missing...).
-		WithHint("grant these scopes by scanning: %s", url)
+		WithHint("%s", scopeRemediationHint(pf.brand, pf.appID, pf.identity, missing))
+}
+
+// scopeRemediationHint returns an identity-appropriate fix for missing scopes.
+// Bot: the scan-to-enable link adds the scopes to the app manifest, after which
+// the tenant token carries them. User: the scan link only updates the app
+// manifest — the user's own token still lacks the scopes until it is
+// re-authorized — so direct the user to re-login instead.
+func scopeRemediationHint(brand core.LarkBrand, appID string, identity core.Identity, missing []string) string {
+	if identity.IsBot() {
+		return fmt.Sprintf("grant these scopes by scanning: %s",
+			addonsHintURL(brand, appID, missingScopeAddons(identity, missing)))
+	}
+	return fmt.Sprintf(
+		"run `lark-cli auth login --scope \"%s\"` in the background. It blocks and outputs a verification URL — retrieve the URL and open it in a browser to complete login.",
+		strings.Join(missing, " "))
 }
 
 // preflightEventTypes verifies every RequiredConsoleEvents entry is subscribed
