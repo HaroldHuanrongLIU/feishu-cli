@@ -30,7 +30,7 @@ metadata:
 | [`+download`](references/lark-minutes-download.md) | 下载妙记音视频媒体文件 |
 | [`+upload`](references/lark-minutes-upload.md) | 上传 file_token 生成妙记 |
 | [`+update`](references/lark-minutes-update.md) | 更新妙记标题 |
-| [`+speaker-replace`](references/lark-minutes-speaker-replace.md) | 替换妙记逐字稿中的说话人（仅支持用户 ID，不支持姓名） |
+| [`+speaker-replace`](references/lark-minutes-speaker-replace.md) | 替换妙记逐字稿中的说话人（`--from-speaker-id` 支持展示名，CLI 内部解析） |
 
 - 使用任何 Shortcut 前，必须先读其对应 reference 文档。
 
@@ -43,7 +43,7 @@ metadata:
 | "下载妙记的视频/音频" | 本 skill（`+download`） |
 | "把音视频转妙记/上传文件生成妙记" | 本 skill（`+upload`） |
 | "重命名妙记/改妙记标题" | 本 skill（`+update`） |
-| "替换说话人/把 A 的发言改成 B" | 本 skill（`+speaker-replace`） |
+| "替换说话人/把 A 的发言改成 B/把外部说话人改成飞书用户" | 本 skill（`+speaker-replace --from-speaker-id`） |
 | "这个妙记的逐字稿/总结/待办/章节" | [lark-vc](../lark-vc/SKILL.md)（`vc +notes --minute-tokens`） |
 | "把音视频文件转成纪要/逐字稿/文字稿" | 先本 skill（`+upload`），再 [lark-vc](../lark-vc/SKILL.md)（`vc +notes --minute-tokens`） |
 | 用户同时提到"会议/开会"和"妙记" | 先 [lark-vc](../lark-vc/SKILL.md)（`+search` → `+recording`），再本 skill |
@@ -135,7 +135,7 @@ Minutes (妙记) ← minute_token 标识
 > - 用户说"通过文件生成妙记 / 把音视频转妙记" → 先上传获取 `file_token`，然后使用 `minutes +upload`
 > - 用户说"把音视频文件转成纪要 / 逐字稿 / 文字稿 / 撰写文字 / 总结 / 待办 / 章节" → 先上传获取 `file_token`，调用 `minutes +upload` 生成 `minute_url`，再提取 `minute_token` 走 `vc +notes --minute-tokens`
 > - 用户说"重命名妙记 / 改妙记标题 / 修改妙记名字" → `minutes +update`
-> - 用户说"替换说话人 / 把 A 的发言改成 B / 重新归属发言人" → `minutes +speaker-replace`
+> - 用户说"替换说话人 / 把 A 的发言改成 B / 重新归属发言人 / 把外部（非飞书）说话人改成飞书用户" → `minutes +speaker-replace --from-speaker-id <展示名或 speaker_id> --to-user-id <ou_...>`；若有同名说话人，提醒用户对照各人发言内容确认后传入精确 speaker_id
 
 ## API Resources
 
