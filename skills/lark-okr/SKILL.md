@@ -28,6 +28,9 @@ Shortcut 是对常用操作的高级封装（`lark-cli okr +<verb> [flags]`）�
 | [`+progress-update`](references/lark-okr-progress-update.md) | 更新指定 ID 的进展记录内容          |
 | [`+progress-delete`](references/lark-okr-progress-delete.md) | 删除指定 ID 的进展记录（不可恢复）      |
 | [`+upload-image`](references/lark-okr-image-upload.md)       | 上传图片用于 OKR 进展记录的富文本内容    |
+| [`+batch-create`](references/lark-okr-batch-create.md)       | 批量创建 Objective 和 KR，支持自动回滚    |
+| [`+reorder`](references/lark-okr-reorder.md)                 | 调整 Objective 或 KR 的顺位              |
+| [`+weight`](references/lark-okr-weight.md)                   | 调整 Objective 或 KR 的权重              |
 
 ## 格式说明
 

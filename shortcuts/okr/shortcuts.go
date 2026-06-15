@@ -18,5 +18,8 @@ func Shortcuts() []common.Shortcut {
 		OKRUpdateProgressRecord,
 		OKRDeleteProgressRecord,
 		OKRUploadImage,
+		OKRBatchCreate,
+		OKRReorder,
+		OKRWeight,
 	}
 }
