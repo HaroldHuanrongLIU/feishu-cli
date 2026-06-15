@@ -14,16 +14,16 @@ import (
 	"github.com/larksuite/cli/shortcuts/common"
 )
 
-const msgGetHint = "verify --app-id / --session-id / --turn-id are correct; get the latest turn_id via `lark-cli apps +session-get --app-id <app_id> --session-id <session_id>`"
+const sessionMessagesListHint = "verify --app-id / --session-id / --turn-id are correct; get the latest turn_id via `lark-cli apps +session-get --app-id <app_id> --session-id <session_id>`"
 
-var AppsMessageGet = common.Shortcut{
+var AppsSessionMessagesList = common.Shortcut{
 	Service:     appsService,
-	Command:     "+message-get",
-	Description: "Get the reply messages of a session turn (cursor pagination)",
+	Command:     "+session-messages-list",
+	Description: "List the reply messages of a session turn (page_token pagination)",
 	Risk:        "read",
 	Tips: []string{
-		"Example: lark-cli apps +message-get --app-id <app_id> --session-id <session_id> --turn-id <turn_id>",
-		"Tip: turn_id comes from `+session-get` latest_turn.turn_id; page with --cursor <next_cursor>",
+		"Example: lark-cli apps +session-messages-list --app-id <app_id> --session-id <session_id> --turn-id <turn_id>",
+		"Tip: turn_id comes from `+session-get` latest_turn.turn_id; page with --page-token <next_page_token>",
 	},
 	Scopes:    []string{"spark:app:read"},
 	AuthTypes: []string{"user"},
@@ -37,7 +37,7 @@ var AppsMessageGet = common.Shortcut{
 		{Name: "app-id", Desc: "app ID"},
 		{Name: "session-id", Desc: "session ID"},
 		{Name: "turn-id", Desc: "turn ID (from +session-get latest_turn.turn_id)"},
-		{Name: "cursor", Type: "int", Desc: "pagination cursor from previous response next_cursor (omit for first page)"},
+		{Name: "page-token", Desc: "pagination token from previous response next_page_token (omit for first page)"},
 	},
 	Validate: func(ctx context.Context, rctx *common.RuntimeContext) error {
 		if strings.TrimSpace(rctx.Str("app-id")) == "" {
@@ -54,15 +54,15 @@ var AppsMessageGet = common.Shortcut{
 	DryRun: func(ctx context.Context, rctx *common.RuntimeContext) *common.DryRunAPI {
 		return common.NewDryRunAPI().
 			GET(replyMessagePath(rctx.Str("app-id"), rctx.Str("session-id"), rctx.Str("turn-id"))).
-			Desc("Get the reply messages of a session turn").
-			Params(buildMessageGetParams(rctx))
+			Desc("List the reply messages of a session turn").
+			Params(buildSessionMessagesListParams(rctx))
 	},
 	Execute: func(ctx context.Context, rctx *common.RuntimeContext) error {
 		data, err := rctx.CallAPITyped("GET",
 			replyMessagePath(rctx.Str("app-id"), rctx.Str("session-id"), rctx.Str("turn-id")),
-			buildMessageGetParams(rctx), nil)
+			buildSessionMessagesListParams(rctx), nil)
 		if err != nil {
-			return withAppsHint(err, msgGetHint)
+			return withAppsHint(err, sessionMessagesListHint)
 		}
 		messages, _ := data["messages"].([]interface{})
 		rctx.OutFormat(data, nil, func(w io.Writer) {
@@ -79,7 +79,7 @@ var AppsMessageGet = common.Shortcut{
 				})
 			}
 			output.PrintTable(w, rows)
-			fmt.Fprintf(w, "next_cursor: %v  has_more: %v\n", data["next_cursor"], data["has_more"])
+			fmt.Fprintf(w, "next_page_token: %v  has_more: %v\n", data["next_page_token"], data["has_more"])
 		})
 		return nil
 	},
@@ -93,10 +93,10 @@ func replyMessagePath(appID, sessionID, turnID string) string {
 		validate.EncodePathSegment(strings.TrimSpace(turnID)))
 }
 
-func buildMessageGetParams(rctx *common.RuntimeContext) map[string]interface{} {
+func buildSessionMessagesListParams(rctx *common.RuntimeContext) map[string]interface{} {
 	params := map[string]interface{}{}
-	if rctx.Cmd.Flags().Changed("cursor") {
-		params["cursor"] = rctx.Int("cursor")
+	if token := strings.TrimSpace(rctx.Str("page-token")); token != "" {
+		params["page_token"] = token
 	}
 	return params
 }

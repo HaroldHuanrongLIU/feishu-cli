@@ -30,7 +30,7 @@ func Shortcuts() []common.Shortcut {
 		AppsSessionList,
 		AppsSessionGet,
 		AppsSessionStop,
-		AppsMessageGet,
+		AppsSessionMessagesList,
 		AppsChat,
 	}
 }
