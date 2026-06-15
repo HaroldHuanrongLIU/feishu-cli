@@ -18,8 +18,8 @@ func TestRejectionError_Rejected(t *testing.T) {
 		t.Fatal("expected error for rejected ack")
 	}
 	prob, ok := errs.ProblemOf(err)
-	if !ok || prob.Subtype != errs.SubtypeFailedPrecondition {
-		t.Errorf("subtype = %v, want failed_precondition; err=%q", prob, err.Error())
+	if !ok || prob.Category != errs.CategoryValidation || prob.Subtype != errs.SubtypeFailedPrecondition {
+		t.Errorf("problem = %v, want validation/failed_precondition; err=%q", prob, err.Error())
 	}
 	if !strings.Contains(err.Error(), "already running") {
 		t.Errorf("error = %q, want reject reason", err.Error())

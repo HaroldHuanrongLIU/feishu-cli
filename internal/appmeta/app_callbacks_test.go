@@ -68,3 +68,34 @@ func TestFetchSubscribedCallbacks_FetchError(t *testing.T) {
 		t.Errorf("got %v, want nil on fetch error", got)
 	}
 }
+
+func TestFetchSubscribedCallbacks_CallbackInfoPresentButNull(t *testing.T) {
+	// callback_info present but subscribed_callbacks explicitly null → must be
+	// a non-nil empty slice so the precheck reports missing callbacks.
+	raw := `{"code":0,"data":{"app":{"callback_info":{"subscribed_callbacks":null}}},"msg":"success"}`
+	got, err := FetchSubscribedCallbacks(context.Background(), fakeCallbackClient{raw: raw}, "cli_x")
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+	if got == nil {
+		t.Fatalf("got nil, want non-nil empty slice when subscribed_callbacks is null")
+	}
+	if len(got) != 0 {
+		t.Errorf("got %v, want empty", got)
+	}
+}
+
+func TestFetchSubscribedCallbacks_CallbackInfoPresentButOmitted(t *testing.T) {
+	// callback_info present but subscribed_callbacks omitted → same as null: non-nil empty.
+	raw := `{"code":0,"data":{"app":{"callback_info":{"callback_type":"websocket"}}},"msg":"success"}`
+	got, err := FetchSubscribedCallbacks(context.Background(), fakeCallbackClient{raw: raw}, "cli_x")
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+	if got == nil {
+		t.Fatalf("got nil, want non-nil empty slice when subscribed_callbacks is omitted")
+	}
+	if len(got) != 0 {
+		t.Errorf("got %v, want empty", got)
+	}
+}
