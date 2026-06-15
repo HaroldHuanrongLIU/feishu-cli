@@ -4,6 +4,7 @@
 package apps
 
 import (
+	"errors"
 	"strings"
 	"testing"
 
@@ -65,20 +66,35 @@ func TestAppsSessionMessagesList_PageTokenOnlyWhenSet(t *testing.T) {
 
 func TestAppsSessionMessagesList_RequiresIDs(t *testing.T) {
 	cases := []struct {
-		name string
-		args []string
-		want string
+		name      string
+		args      []string
+		wantParam string
 	}{
-		{"no app-id", []string{"+session-messages-list", "--app-id", "", "--session-id", "s", "--turn-id", "t", "--as", "user"}, "app-id"},
-		{"no session-id", []string{"+session-messages-list", "--app-id", "a", "--session-id", "", "--turn-id", "t", "--as", "user"}, "session-id"},
-		{"no turn-id", []string{"+session-messages-list", "--app-id", "a", "--session-id", "s", "--turn-id", "", "--as", "user"}, "turn-id"},
+		{"no app-id", []string{"+session-messages-list", "--app-id", "", "--session-id", "s", "--turn-id", "t", "--as", "user"}, "--app-id"},
+		{"no session-id", []string{"+session-messages-list", "--app-id", "a", "--session-id", "", "--turn-id", "t", "--as", "user"}, "--session-id"},
+		{"no turn-id", []string{"+session-messages-list", "--app-id", "a", "--session-id", "s", "--turn-id", "", "--as", "user"}, "--turn-id"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			factory, stdout, _ := newAppsExecuteFactory(t)
 			err := runAppsShortcut(t, AppsSessionMessagesList, c.args, factory, stdout)
-			if err == nil || !strings.Contains(err.Error(), c.want) {
-				t.Fatalf("expected %q required error, got %v", c.want, err)
+			if err == nil {
+				t.Fatalf("expected validation error for %s, got nil", c.wantParam)
+			}
+			p, ok := errs.ProblemOf(err)
+			if !ok {
+				t.Fatalf("expected a typed Problem error, got %T: %v", err, err)
+			}
+			if p.Category != errs.CategoryValidation || p.Subtype != errs.SubtypeInvalidArgument {
+				t.Fatalf("error type=%v subtype=%v, want %v/%v (err=%v)",
+					p.Category, p.Subtype, errs.CategoryValidation, errs.SubtypeInvalidArgument, err)
+			}
+			var ve *errs.ValidationError
+			if !errors.As(err, &ve) {
+				t.Fatalf("expected *errs.ValidationError, got %T: %v", err, err)
+			}
+			if ve.Param != c.wantParam {
+				t.Fatalf("Param = %q, want %q (err=%v)", ve.Param, c.wantParam, err)
 			}
 		})
 	}

@@ -9,6 +9,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/larksuite/cli/errs"
 	"github.com/larksuite/cli/internal/output"
 	"github.com/larksuite/cli/internal/validate"
 	"github.com/larksuite/cli/shortcuts/common"
@@ -33,7 +34,7 @@ var AppsSessionMessagesList = common.Shortcut{
 		// framework maps Required:true to cobra's MarkFlagRequired, whose error is
 		// plain-text exit-1, bypassing the structured envelope. Spec §6 mandates
 		// exit-2 + a {"ok":false,"error":{...}} validation envelope, so the
-		// emptiness checks live in Validate (output.ErrValidation -> exit 2).
+		// emptiness checks live in Validate (errs.NewValidationError -> exit 2).
 		{Name: "app-id", Desc: "app ID"},
 		{Name: "session-id", Desc: "session ID"},
 		{Name: "turn-id", Desc: "turn ID (from +session-get latest_turn.turn_id)"},
@@ -41,13 +42,13 @@ var AppsSessionMessagesList = common.Shortcut{
 	},
 	Validate: func(ctx context.Context, rctx *common.RuntimeContext) error {
 		if strings.TrimSpace(rctx.Str("app-id")) == "" {
-			return output.ErrValidation("--app-id is required")
+			return errs.NewValidationError(errs.SubtypeInvalidArgument, "--app-id is required").WithParam("--app-id")
 		}
 		if strings.TrimSpace(rctx.Str("session-id")) == "" {
-			return output.ErrValidation("--session-id is required")
+			return errs.NewValidationError(errs.SubtypeInvalidArgument, "--session-id is required").WithParam("--session-id")
 		}
 		if strings.TrimSpace(rctx.Str("turn-id")) == "" {
-			return output.ErrValidation("--turn-id is required")
+			return errs.NewValidationError(errs.SubtypeInvalidArgument, "--turn-id is required").WithParam("--turn-id")
 		}
 		return nil
 	},
